@@ -115,6 +115,8 @@ services:
     image: sonarqube:9.9-community
     environment:
       - SONAR_JDBC_URL=jdbc:postgresql://db:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
     ports:
       - "9000:9000"
     depends_on:
@@ -576,3 +578,14 @@ docker push registry.local:5000/myapp:1.0.0
 ```
 # Conclusion
 Ce TP fournit un workflow CI/CD réaliste et reproductible : build → test → sonar → push → deploy sur environnements simulés par containers. Il couvre la plupart des besoins pour tester un pipeline multi-environnements avant déploiement réel en production.
+
+
+# Troubleshooting 
+Sur ta machine hôte (et pas dans le conteneur), exécute cette commande :
+
+sudo sysctl -w vm.max_map_count=262144
+
+
+Puis rends la persistance du paramètre (facultatif mais recommandé) :
+
+echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf
