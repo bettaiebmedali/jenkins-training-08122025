@@ -589,3 +589,82 @@ sudo sysctl -w vm.max_map_count=262144
 Puis rends la persistance du paramètre (facultatif mais recommandé) :
 
 echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf
+
+
+
+
+🧩 1️⃣ Génération de la clé sur ta machine hôte (ex. pour Jenkins)
+
+Tu l’as déjà bien fait :
+
+ssh-keygen -t ed25519 -C "jenkins-deploy" -f jenkins_deploy_key
+
+
+Cela crée :
+
+jenkins_deploy_key → clé privée
+
+jenkins_deploy_key.pub → clé publique
+
+💡 Garde la clé privée dans Jenkins ou ton utilisateur hôte.
+On ne la met jamais dans les conteneurs.
+
+⚙️ 2️⃣ Récupère le contenu de la clé publique
+
+Affiche le contenu :
+
+cat jenkins_deploy_key.pub
+
+
+Exemple de sortie :
+
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC9jC+ZfN8PvZ8b6lG2vZzG4RCz+9Yb+3N+e6jz3r5R jenkins-deploy
+
+🧰 3️⃣ Ajoute la clé publique à tous les conteneurs
+
+Tu peux le faire à la main (méthode simple) ou via une commande automatisée.
+
+✅ Méthode manuelle (comme tu disais)
+
+Pour chaque conteneur :
+
+docker exec -it dev-server bash
+mkdir -p /root/.ssh
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC9jC+ZfN8PvZ8b6lG2vZzG4RCz+9Yb+3N+e6jz3r5R jenkins-deploy" >> /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
+chmod 700 /root/.ssh
+exit
+
+
+Fais la même chose pour :
+
+docker exec -it qualif-server bash
+docker exec -it prod-server bash
+
+⚙️ Méthode automatisée (1 seule commande pour tous)
+
+Copie ta clé publique dans une variable shell :
+
+PUBKEY=$(cat jenkins_deploy_key.pub)
+
+
+Puis exécute ceci :
+
+for container in dev-server qualif-server prod-server; do
+  docker exec -u root $container bash -c "mkdir -p /root/.ssh && echo '$PUBKEY' >> /root/.ssh/authorized_keys && chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys"
+done
+
+
+✅ Cela ajoute la clé publique sur les 3 conteneurs d’un coup.
+
+🔍 4️⃣ Teste la connexion
+
+Depuis ta machine hôte ou Jenkins, teste :
+
+ssh -i jenkins_deploy_key root@localhost -p 2222   # dev-server
+ssh -i jenkins_deploy_key root@localhost -p 2223   # qualif-server
+ssh -i jenkins_deploy_key root@localhost -p 2224   # prod-server
+
+
+Si tout est bon, tu ne devrais pas avoir à entrer de mot de passe.
+Tu arrives directement dans le shell du conteneur.
