@@ -77,7 +77,7 @@ Permanent Agent
 **Remote root directory :**
 ```
 
-/home/jenkins
+/home/debian/jenkins
 
 ```
 
