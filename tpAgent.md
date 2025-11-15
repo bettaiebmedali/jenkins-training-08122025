@@ -110,14 +110,11 @@ Conservez le secret pour la suite.
 Créer `Dockerfile.java` :
 
 ```Dockerfile
-FROM jenkins/inbound-agent:latest
+FROM jenkins/inbound-agent:jdk17
 
-USER root
-RUN apt-get update \
-    && apt-get install -y openjdk-17-jdk \
-    && apt-get clean
-
+# (Optional) set user, but the base image already defaults to `jenkins`
 USER jenkins
+
 ````
 
 Build :
