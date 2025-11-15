@@ -76,38 +76,37 @@ pipeline {
     agent any
 
     parameters {
-        choice(name: 'DEPLOY_ENV', choices: ['DEV', 'TEST', 'PROD'], description: 'Environnement de déploiement')
-        string(name: 'SOURCE_BUILD', defaultValue: 'lastSuccessfulBuild', description: 'Numéro du build à déployer')
-    }
-
-    environment {
-        SERVER_CREDS = credentials('deploy_server')
+        choice(name: 'DEPLOY_ENV', choices: ['DEV', 'TEST', 'PROD'])
+        string(name: 'SOURCE_BUILD', defaultValue: 'lastSuccessfulBuild')
     }
 
     stages {
         stage('Téléchargement artefacts') {
             steps {
-                copyArtifacts(
-                    projectName: 'Build-App',
-                    selector: specific("${params.SOURCE_BUILD}"),
-                    filter: 'build/*.txt'
-                )
-                sh 'cat build/info.txt'
+                script {
+                    // URL des artefacts du job Build-App
+                    def artifactUrl = "${JENKINS_URL}/job/Build-App/${params.SOURCE_BUILD}/artifact/build/info.txt"
+
+                    echo "Téléchargement depuis : ${artifactUrl}"
+
+                    sh """
+                        mkdir -p build
+                        curl -s -o build/info.txt "${artifactUrl}"
+                    """
+
+                    sh 'cat build/info.txt'
+                }
             }
         }
 
         stage('Déploiement') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'deploy_server', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
-                    sh '''
-                        echo "Connexion SSH simulée : ${SSH_USER}@serveur"
-                        echo "Déploiement de l’application sur ${DEPLOY_ENV}"
-                    '''
-                }
+                echo "Déploiement sur ${params.DEPLOY_ENV}"
             }
         }
     }
 }
+
 ```
 
 ### 🧾 Résumé
