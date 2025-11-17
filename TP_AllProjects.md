@@ -151,8 +151,8 @@ Tester un projet sur **plusieurs environnements ou versions**.
 2. Nouveau Item → Nom : `TP4-Matrix`  
 3. Type : **Multi-configuration project**
 4. Configurer les **Axes de build** :
-   - `OS` → `linux`, `windows`
-   - `JDK` → `11`, `17`
+   - `OS` → `linux`  `windows`
+   - `JDK` → `11`  `17`
 5. Étapes de build :  
    ```bash
    echo "Build sur OS=$OS avec JDK=$JDK"
