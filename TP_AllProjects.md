@@ -137,26 +137,6 @@ Utiliser un projet **basé sur Maven**.
 Jenkins exécute Maven automatiquement, détecte les tests et archive les artefacts `.jar`.  
 > Idéal pour les projets Java standards.
 
----
-
-## 🌍 6. External Job
-
-### 🎯 Objectif
-Suivre un job **exécuté en dehors de Jenkins** (ex. script externe).
-
-### ⚙️ Étapes
-
-1. Nouveau Item → Nom : `TP4-External`  
-2. Type : **External Job**
-3. Jenkins te donne une commande comme :
-   ```bash
-   java -jar jenkins-cli.jar -s http://localhost:8080/ build TP4-External
-   ```
-4. Tu peux l’utiliser dans des scripts extérieurs ou des cron jobs.
-
-### 🔍 Résultat
-Jenkins enregistre le statut du job exécuté ailleurs.  
-> Idéal pour suivre des processus legacy ou systèmes externes.
 
 ---
 
