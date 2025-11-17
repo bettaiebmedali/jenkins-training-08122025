@@ -137,30 +137,10 @@ Utiliser un projet **basé sur Maven**.
 Jenkins exécute Maven automatiquement, détecte les tests et archive les artefacts `.jar`.  
 > Idéal pour les projets Java standards.
 
----
-
-## 🌍 6. External Job
-
-### 🎯 Objectif
-Suivre un job **exécuté en dehors de Jenkins** (ex. script externe).
-
-### ⚙️ Étapes
-
-1. Nouveau Item → Nom : `TP4-External`  
-2. Type : **External Job**
-3. Jenkins te donne une commande comme :
-   ```bash
-   java -jar jenkins-cli.jar -s http://localhost:8080/ build TP4-External
-   ```
-4. Tu peux l’utiliser dans des scripts extérieurs ou des cron jobs.
-
-### 🔍 Résultat
-Jenkins enregistre le statut du job exécuté ailleurs.  
-> Idéal pour suivre des processus legacy ou systèmes externes.
 
 ---
 
-## 🧰 7. Multi-configuration (Matrix Project)
+## 🧰 6. Multi-configuration (Matrix Project)
 
 ### 🎯 Objectif
 Tester un projet sur **plusieurs environnements ou versions**.
@@ -171,8 +151,8 @@ Tester un projet sur **plusieurs environnements ou versions**.
 2. Nouveau Item → Nom : `TP4-Matrix`  
 3. Type : **Multi-configuration project**
 4. Configurer les **Axes de build** :
-   - `OS` → `linux`, `windows`
-   - `JDK` → `11`, `17`
+   - `OS` → `linux`  `windows`
+   - `JDK` → `11`  `17`
 5. Étapes de build :  
    ```bash
    echo "Build sur OS=$OS avec JDK=$JDK"
