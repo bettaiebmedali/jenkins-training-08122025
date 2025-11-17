@@ -180,6 +180,8 @@ Créer un fichier `Jenkinsfile` dans le repo :
 
 ```groovy
 
+
+
 pipeline {
     agent any
 
@@ -188,18 +190,24 @@ pipeline {
     }
 
     environment {
-        REGISTRY = "vps-XXXXX.ovh.net:5000"
-        SONAR_URL = "http://vps-XXXXX.ovh.net:9000"
+        REGISTRY = "vps-36f602ea.vps.ovh.net:5000"
+        SONAR_URL = "http://vps-36f602ea.vps.ovh.net:9000"
     }
 
     stages {
 
         /* ----- 1. QUALITY GATE pour TOUT sauf main ----- */
         stage('SonarQube Analysis') {
-            when { not { branch "main" } }
             steps {
-                withSonarQubeEnv('sonar') {
-                    sh 'mvn clean verify sonar:sonar'
+                withSonarQubeEnv('sonar-server') {
+                    dir('backend-demo') {
+                        sh """
+                            mvn clean verify sonar:sonar \
+                                -Dsonar.projectKey=demo-backend \
+                                -Dsonar.host.url=$SONAR_URL \
+                                -DskipTests
+                        """
+                    }
                 }
             }
         }
@@ -207,7 +215,9 @@ pipeline {
         /* ----- 2. BUILD pour TOUT ----- */
         stage('Build Maven') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                dir('backend-demo') {
+                    sh "mvn clean package -DskipTests"
+                }
             }
         }
 
@@ -220,11 +230,13 @@ pipeline {
                 }
             }
             steps {
-                sh 'mvn test'
+                dir('backend-demo') {
+                    sh "mvn test"
+                }
             }
         }
 
-        /* ----- 4. BUILD DOCKER : uniquement develop, release/* et main ----- */
+        /* ----- 4. BUILD DOCKER : develop, release/*, main ----- */
         stage('Docker Build') {
             when {
                 anyOf {
@@ -234,33 +246,40 @@ pipeline {
                 }
             }
             steps {
-                sh """
-                docker build -t ${REGISTRY}/backend:${BRANCH_NAME} .
-                docker push ${REGISTRY}/backend:${BRANCH_NAME}
-                """
+                dir('backend-demo') {
+                    sh """
+                        docker build -t ${REGISTRY}/backend:${BRANCH_NAME} .
+                        docker push ${REGISTRY}/backend:${BRANCH_NAME}
+                    """
+                }
             }
         }
 
         /* ----- 5. DEPLOY : seulement main ----- */
         stage('Deploy to Production') {
-            when { branch "main" }
+            when { 
+                branch "main" 
+            }
             steps {
                 sh """
-                ssh root@VM 'docker pull ${REGISTRY}/backend:main'
-                ssh root@VM 'docker compose -f /srv/app/docker-compose.yml up -d'
+                ssh -o StrictHostKeyChecking=no debian@217.182.207.167 '
+                    sudo docker pull ${REGISTRY}/backend:main &&
+                    sudo docker stop backend || true &&
+                    sudo docker rm backend || true &&
+                    sudo docker run -d --name backend -p 8080:8080 ${REGISTRY}/backend:main
+                '
                 """
             }
         }
     }
 
-    /*
-     * OPTIONS : notifications / clean workspace / discard old builds
-     */
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
     }
 }
+
+
 
 
 ```
