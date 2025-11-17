@@ -140,7 +140,7 @@ Jenkins exécute Maven automatiquement, détecte les tests et archive les artefa
 
 ---
 
-## 🧰 7. Multi-configuration (Matrix Project)
+## 🧰 6. Multi-configuration (Matrix Project)
 
 ### 🎯 Objectif
 Tester un projet sur **plusieurs environnements ou versions**.
