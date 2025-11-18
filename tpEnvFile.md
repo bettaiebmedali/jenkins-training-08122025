@@ -1,6 +1,6 @@
 
 ---
-## 🚀 TP3 — Jenkins Expert : CI/CD Complet
+## 🚀— Jenkins Expert : CI/CD Complet
 
 ### 🎯 Objectif
 Créer un pipeline multibranch Git lisant un `.env`, construisant et poussant une image Docker.
