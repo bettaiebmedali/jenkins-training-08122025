@@ -8,10 +8,12 @@ Correction complète — correction_maven.md
 ```groovy
 pipeline {
     agent any
-
+    tools {
+        maven 'maven3'
+    }
     parameters {
         choice(name: 'BUILD_ENV', choices: ['DEV', 'TEST', 'PROD'], description: 'Environnement de build')
-        string(name: 'VERSION', defaultValue: '1.0.0', description: 'Version de l’application')
+        string(name: 'VERSION', defaultValue: '1.0.0', description: 'Version de l?application')
     }
 
     environment {
@@ -22,7 +24,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/spring-projects/spring-petclinic.git'
+                 git branch: 'main', url: 'https://github.com/spring-projects/spring-petclinic.git'
             }
         }
 
@@ -50,8 +52,9 @@ pipeline {
         }
     }
 }
-
-🧱 Pipeline 2 : Deploy-Maven-App
+``` 
+## 🧱 Pipeline 2 : Deploy-Maven-App
+```
 pipeline {
     agent any
 
@@ -80,30 +83,31 @@ pipeline {
 
         stage('Déploiement') {
             steps {
-                echo "Déploiement de l’application sur ${params.DEPLOY_ENV}"
+                echo "Déploiement de l?application sur ${params.DEPLOY_ENV}"
             }
         }
     }
 }
+```
 
 ✔ Résultat final attendu
 
-Le job Build-Maven-App :
+✔ Le job Build-Maven-App :
 
-clone un projet Maven
+✔ clone un projet Maven
 
-génère un JAR
+✔ génère un JAR
 
-archive le JAR
+✔ archive le JAR
 
-déclenche automatiquement le job Deploy-Maven-App
+✔ déclenche automatiquement le job Deploy-Maven-App
 
-Le job Deploy-Maven-App :
+✔ Le job Deploy-Maven-App :
 
-télécharge le JAR du build précédent
+✔ télécharge le JAR du build précédent
 
-affiche son contenu
+✔ affiche son contenu
 
-simule un déploiement
+✔ simule un déploiement
 
-Pipeline complet validé ✔
+✔ Pipeline complet validé ✔
