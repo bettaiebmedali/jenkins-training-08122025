@@ -80,8 +80,12 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                echo "Compilation..."
-                sh 'mvn clean package'
+                echo 'Compilation en cours...'
+            }
+        }
+        stage('Tests') {
+            steps {
+                echo 'Tests en cours...'
             }
         }
     }
@@ -90,30 +94,33 @@ pipeline {
         success {
             echo "Build success"
             emailext(
-                to: "votre_mail@gmail.com",
+                to: "yourMail@gmail.com",
                 subject: "✔ SUCCESS - Build Jenkins",
                 body: "Le build est passé au vert 👍"
             )
-            slackSend(
-                webhookUrl: credentials('slack-webhook'),
-                message: "✔ SUCCESS : Le build Jenkins fonctionne !"
-            )
+            slackNotification("✔️ Build SUCCESS")
         }
-
         failure {
             echo "Build failed"
             emailext(
-                to: "votre_mail@gmail.com",
+                to: "yourMail@gmail.com",
                 subject: "❌ FAILURE - Build Jenkins",
                 body: "Le build a échoué ❗"
             )
-            slackSend(
-                webhookUrl: credentials('slack-webhook'),
-                message: "❌ FAIL : Le build Jenkins a échoué !"
-            )
+            slackNotification("❌ Build FAILED")
         }
     }
 }
+
+def slackNotification(String message) {
+    withCredentials([string(credentialsId: 'slackWebhook', variable: 'SLACK_WEBHOOK')]) {
+        sh """
+        curl -X POST -H 'Content-type: application/json' \
+        --data '{"text": "${message}"}' $SLACK_WEBHOOK
+        """
+    }
+}
+
 ```
 
 ## 🧪 4. Tester les notifications
