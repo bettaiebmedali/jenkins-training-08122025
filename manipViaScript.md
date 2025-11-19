@@ -197,3 +197,241 @@ Réorganiser automatiquement vos jobs
 Gérer folders, copie, suppression, renommage
 
 Faire des audits automatisés
+
+
+
+deplacement des job par prefix 
+def PREFIX = "poste00"
+
+
+✅ SCRIPT GROOVY FINAL (fonctionne, sans Markdown, compatible Jenkins)
+import jenkins.model.*
+import hudson.model.*
+import com.cloudbees.hudson.plugins.folder.*
+
+// =====================
+// PARAMETRE A MODIFIER
+// =====================
+def PREFIX = "poste00"
+
+// Fonction récursive pour collecter les jobs dans tous les dossiers
+def collectJobsRecursively(item, prefix, result) {
+    if (item instanceof Folder) {
+        item.getItems().each { subItem ->
+            collectJobsRecursively(subItem, prefix, result)
+        }
+    } else if (item instanceof Job) {
+        if (item.name.startsWith(prefix)) {
+            result << item
+        }
+    }
+}
+
+def j = Jenkins.instance
+def folderName = PREFIX
+
+// 1. Création du folder si pas existant
+def targetFolder = j.getItem(folderName)
+if (targetFolder == null) {
+    println "📁 Folder '${folderName}' introuvable, création..."
+    targetFolder = new Folder(j, folderName)
+    j.putItem(folderName, targetFolder)
+    targetFolder.save()
+    println "✅ Folder créé : ${folderName}"
+} else {
+    println "📁 Folder '${folderName}' déjà existant"
+}
+
+// 2. Recherche de tous les jobs partout
+println "\n🔎 Recherche des jobs commençant par '${PREFIX}'..."
+def jobsToMove = []
+j.getItems().each { item ->
+    collectJobsRecursively(item, PREFIX, jobsToMove)
+}
+
+if (jobsToMove.isEmpty()) {
+    println "⚠️ Aucun job trouvé avec le préfixe '${PREFIX}'"
+} else {
+    println "📌 Jobs trouvés :"
+    jobsToMove.each { println "   - ${it.fullName}" }
+}
+
+// 3. Déplacement des jobs
+println "\n🚚 Déplacement vers '${folderName}'...\n"
+jobsToMove.each { job ->
+    try {
+        Items.move(job, targetFolder)
+        println "➡️ Déplacé : ${job.fullName}"
+    } catch (Exception e) {
+        println "❌ Erreur : ${job.fullName} — ${e.message}"
+    }
+}
+
+println "\n🎉 Terminé !"
+
+🔥 Maintenant ça va marcher sans erreur.
+
+
+en cas de probleme 
+
+import com.cloudbees.hudson.plugins.folder.Folder
+import jenkins.model.Jenkins
+
+Jenkins j = Jenkins.instance
+
+String rootFolderName = "poste01"
+
+// --- Fonction utilitaire : retourner ou créer un folder ---
+Folder getOrCreateFolder(ItemGroup parent, String name) {
+    def f = parent.getItem(name)
+    if (f == null) {
+        println "📁 Folder '${name}' introuvable, création..."
+        f = new Folder(parent, name)
+        parent.add(f, name)
+    }
+    return f
+}
+
+// --- Création du dossier principal ---
+Folder root = getOrCreateFolder(j, rootFolderName)
+
+println "📂 Dossier racine : ${root.fullName}"
+
+// --- Fonction qui scanne récursivement tous les sous-dossiers ---
+void scanFolder(Folder folder) {
+    println "🔍 Scan dossier : ${folder.fullName}"
+
+    folder.getItems().each { item ->
+        if (item instanceof Folder) {
+            println "➡️ Sous-folder trouvé : ${item.fullName}"
+            scanFolder(item) // récursion
+        } else {
+            println "📄 Job trouvé : ${item.fullName}"
+        }
+    }
+}
+
+// --- Lancer le scan ---
+scanFolder(root)
+
+println "✔ Scan terminé."
+
+
+une autre version à valider 
+
+/**
+ * Script Groovy — Regrouper les jobs provenant d’un dossier PROJETS-Formation-17112025
+ * dans un dossier racine FORMATION-<SUFFIX>
+ *
+ * Modes :
+ *   A → Regroupe par prefix utilisateur (poste09 → poste09/)
+ *   B → Regroupe par type (TP, build, deploy)
+ *   C → Regroupe tous les jobs ensemble dans un seul dossier
+ *
+ * Paramètres :
+ */
+def ROOT_FOLDER_NAME = "PROJETS-Formation-17112025"
+def TARGET_SUFFIX    = "00"     // devient FORMATION-00
+def GROUP_MODE       = "A"      // A, B ou C
+
+println "📂 Scan du dossier : ${ROOT_FOLDER_NAME}"
+println "🎯 Mode : ${GROUP_MODE}"
+println "🎯 Folder cible (racine) : FORMATION-${TARGET_SUFFIX}"
+println "───────────────────────────────────────────────"
+
+// -----------------------------------------------------------
+// 1. Récupération du dossier source contenant les jobs
+// -----------------------------------------------------------
+def jenkins = Jenkins.instance
+def root = jenkins
+
+def source = root.getItem(ROOT_FOLDER_NAME)
+if (!source) {
+    println "❌ Le dossier '${ROOT_FOLDER_NAME}' n'existe pas."
+    return
+}
+
+println "📁 Dossier source trouvé : ${source.name}"
+
+// -----------------------------------------------------------
+// 2. Création du folder FORMATION-XX sous la racine
+// -----------------------------------------------------------
+def targetRootName = "FORMATION-${TARGET_SUFFIX}"
+def targetRoot = root.getItem(targetRootName)
+
+if (!targetRoot) {
+    println "📁 Folder '${targetRootName}' introuvable, création…"
+    targetRoot = new com.cloudbees.hudson.plugins.folder.Folder(root, targetRootName)
+    root.add(targetRoot, targetRootName)
+    targetRoot.save()
+    root.save()
+}
+
+println "📁 Folder racine de destination : ${targetRootName}"
+println "───────────────────────────────────────────────"
+
+
+// Fonction utilitaire : trouver ou créer un folder dans un parent
+def getOrCreateFolder(parent, name) {
+    def f = parent.getItem(name)
+    if (!f) {
+        println "📁 Création du folder : ${name}"
+        f = new com.cloudbees.hudson.plugins.folder.Folder(parent, name)
+        parent.add(f, name)
+        f.save()
+    }
+    return f
+}
+
+// Fonction : détecter type (pour mode B)
+def detectType(jobName) {
+    if (jobName =~ /(?i)TP/) return "TP"
+    if (jobName =~ /(?i)deploy/) return "deploy"
+    if (jobName =~ /(?i)build/) return "build"
+    return "autre"
+}
+
+println "🔍 Recherche des jobs dans ${ROOT_FOLDER_NAME}"
+println "───────────────────────────────────────────────"
+
+def movedCount = 0
+
+source.items.each { job ->
+
+    println "\n→ Job trouvé : ${job.name}"
+
+    // Déterminer cible selon mode
+    def destinationFolder = null
+
+    switch (GROUP_MODE.toUpperCase()) {
+
+        case "A":
+            // Mode A : prefix utilisateur → poste09-xxx → poste09
+            def prefix = job.name.split("-")[0]
+            destinationFolder = getOrCreateFolder(targetRoot, prefix)
+            break
+
+        case "B":
+            // Mode B : regrouper par type (TP, deploy, build…)
+            def t = detectType(job.name)
+            destinationFolder = getOrCreateFolder(targetRoot, t)
+            break
+
+        case "C":
+            // Mode C : tout dans un seul dossier
+            destinationFolder = getOrCreateFolder(targetRoot, "ALL")
+            break
+    }
+
+    println "🚚 Déplacement → ${destinationFolder.name}"
+
+    try {
+        hudson.model.Items.move(job, destinationFolder)
+        movedCount++
+    } catch (Exception e) {
+        println "❌ Erreur lors du déplacement : ${e.message}"
+    }
+}
+
+println "\n🎉 Terminé ! Jobs déplacés : ${movedCount}"
+println "📦 Destination racine : ${targetRootName}"
