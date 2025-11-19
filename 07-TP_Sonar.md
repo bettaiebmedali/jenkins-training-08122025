@@ -150,3 +150,107 @@ Doit retourner :
 
 Vous disposez maintenant d'un pipeline CI complet GitFlow + Maven +
 Sonar.
+
+
+## Troubleshoot
+# 📝 Résumé + Actions à faire côté SonarQube pour résoudre le problème `waitForQualityGate`
+
+Lorsque ton pipeline affiche :
+
+Timeout set to expire in 3 min 0 sec
+Checking status of SonarQube task 'AZqV0W...'
+Status is 'IN_PROGRESS'
+
+
+👉 **Cela signifie que Jenkins interroge SonarQube, mais SonarQube ne renvoie pas encore le statut final (OK / ERROR)** même si ton analyse semble terminée côté interface.
+
+Ce problème est **fréquent** et lié au fait que SonarQube n'a pas encore "finalisé" le Quality Gate dans son API, même si l’analyse apparaît comme terminée visuellement.
+
+---
+
+# 🚨 Pourquoi ça arrive ?
+- SonarQube peut avoir fini d’analyser **mais pas encore calculé le Quality Gate**.
+- Ou bien Jenkins n’arrive pas à récupérer le résultat via l’API SonarQube.
+- Ou un problème de configuration empêche le retour du statut.
+
+---
+
+# ✅ Actions à faire côté SonarQube
+
+### 1️⃣ **Vérifier que le webhook "sonarqube → jenkins" existe**
+Sans webhook, Jenkins NE PEUT PAS recevoir le Quality Gate final.
+
+Dans SonarQube :
+
+Administration > Configuration > Webhooks
+
+
+Créer un webhook :
+
+Name: jenkins
+URL : http://<jenkins-url>/sonarqube-webhook/
+
+
+✔ Obligatoire  
+✔ Respecter exactement `/sonarqube-webhook/`  
+✔ Redémarrer le projet et retester
+
+---
+
+### 2️⃣ **Tester le webhook**
+SonarQube → Webhooks → Cliquer sur ton webhook → **Recent deliveries**
+
+Vérifier que la dernière livraison est :
+
+Status: 200 (success)
+
+
+Si tu vois :
+- `500` → Jenkins a rejeté l'appel  
+- `404` → Mauvaise URL  
+- `403` → Crumb problem  
+- `ECONNREFUSED` → Jenkins inaccessible  
+
+---
+
+### 3️⃣ **Vérifier la clé du projet**
+Dans SonarQube :
+
+Project Settings > General > Project Key
+
+
+Doit être **exactement le même** que dans ton Jenkinsfile :
+
+Exemple :
+
+```groovy
+withSonarQubeEnv('sonar-server') {
+    sh "mvn sonar:sonar -Dsonar.projectKey=my-app"
+}
+
+4️⃣ Vérifier ton SonarQube token
+
+Dans Jenkins → Credentials :
+
+Kind: Secret Text
+ID : sonar-token
+
+Et dans pipeline :
+
+-Dsonar.login=${SONAR_TOKEN}
+
+5️⃣ Donner plus de temps avant timeout
+
+Si Sonar met plus que 3 minutes :
+
+timeout(time: 6, unit: 'MINUTES') {
+    waitForQualityGate abortPipeline: true
+}
+
+🟢 En résumé simple
+Problème	Solution
+Jenkins reste en IN_PROGRESS	Créer / vérifier webhook Sonar → Jenkins
+SonarQube ne répond pas	Vérifier URL + statut 200
+Mauvais projectKey	Vérifier clé Sonar / Jenkinsfile
+Analyse trop longue	Augmenter timeout
+✔️ Avec ça, ton waitForQualityGate fonctionnera correctement.

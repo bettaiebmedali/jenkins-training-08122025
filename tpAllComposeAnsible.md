@@ -45,41 +45,10 @@ Chaque "server" est un container Docker avec Docker Engine (Docker-in-Docker pat
 
 ## 2. Diagrammes
 
-### 2.1 Diagramme Mermaid (thème clair — recommandé pour docs)
-> Si ton éditeur supporte Mermaid (VSCode + plugin, GitHub Pages avec mermaid activé, etc.), il rendra ce schéma visuel.
 
-```mermaid
-flowchart TB
-  subgraph DEVOPS
-    A[Git (repo)] --> B[Jenkins Pipeline]
-    B --> C[SonarQube (Docker)]
-    B --> D[Docker Registry (registry.local:5000)]
-    B --> E[Ansible (via sshagent)]
-  end
 
-  subgraph ENVIRONMENTS
-    E --> F[dev-server (container)]
-    E --> G[qualif-server (container)]
-    E --> H[prod-server (container)]
-  end
 
-  C --> B
-  D --> F
-  D --> G
-  D --> H
-  B --> I[Tests Post-Deploy]
-
-  style B fill:#f8fbff,stroke:#2b6cb0,stroke-width:2px
-  style C fill:#ffffff,stroke:#2b6cb0
-  style D fill:#ffffff,stroke:#2b6cb0
-  style E fill:#ffffff,stroke:#2b6cb0
-  style F fill:#f7fafc,stroke:#4a5568
-  style G fill:#f7fafc,stroke:#4a5568
-  style H fill:#f7fafc,stroke:#4a5568
-  style I fill:#edf2f7,stroke:#2b6cb0
-
-```
-### 2.2 Schéma ASCII (toujours visible dans n’importe quel viewer)
+### 2.1 Schéma ASCII (toujours visible dans n’importe quel viewer)
 ```less
 
 [ Git ] --> [ Jenkins ]
